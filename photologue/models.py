@@ -698,6 +698,10 @@ class Watermark(BaseEffect):
         mark = Image.open(self.image.path)
         return apply_watermark(im, mark, self.style, self.opacity)
 
+class NaturalManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
 
 class PhotoSize(models.Model):
     name = models.CharField(_('name'), max_length=64, unique=True, help_text=_('Photo size name should contain only letters, numbers and underscores. Examples: "thumbnail", "display", "small", "main_page_widget".'))
@@ -710,6 +714,8 @@ class PhotoSize(models.Model):
     increment_count = models.BooleanField(_('increment view count?'), default=False, help_text=_('If selected the image\'s "view_count" will be incremented when this photo size is displayed.'))
     effect = models.ForeignKey('PhotoEffect', null=True, blank=True, related_name='photo_sizes', verbose_name=_('photo effect'))
     watermark = models.ForeignKey('Watermark', null=True, blank=True, related_name='photo_sizes', verbose_name=_('watermark image'))
+
+    objects = NaturalManager()
 
     class Meta:
         ordering = ['width', 'height']
@@ -749,6 +755,9 @@ class PhotoSize(models.Model):
     def _set_size(self, value):
         self.width, self.height = value
     size = property(_get_size, _set_size)
+
+    def natural_key(self):
+        return (self.name,)
 
 
 class PhotoSizeCache(object):
