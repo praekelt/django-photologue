@@ -212,7 +212,39 @@ class PhotoEffectTest(PLTest):
 
 
 class PhotoSizeCacheTest(PLTest):
-    def test(self):
+    def setUp(self):
+        super(PhotoSizeCacheTest, self).setUp()
+
+        self.s.pre_cache = True
+        self.s.save()
+
+        # Don't use the existing reference because the __init__ method caches
+        # the current image path. __init__ is never called if using an existing
+        # reference.
+        self.pl = TestPhoto.objects.get(name='landscape')
+        self.mtime = os.path.getmtime(self.pl.get_test_filename())
+        
+    def test_cache(self):
         cache = PhotoSizeCache()
         self.assertEqual(cache.sizes['test'], self.s)
 
+    def test_cached_image_untouched(self):
+        """Trivial save. Cached image must remain untouched."""
+        self.pl.save()
+        self.assertEqual(
+            self.mtime, os.path.getmtime(self.pl.get_test_filename())
+        )
+
+    def test_cached_image_recreated(self):
+        """New image data but same filename. Cached image must be recreated."""
+        self.pl.image.save(os.path.basename(LANDSCAPE_IMAGE_PATH),
+                           ContentFile(open(SQUARE_IMAGE_PATH, 'rb').read()))
+        self.pl.save()
+        self.assertNotEqual(
+            self.mtime, os.path.getmtime(self.pl.get_test_filename())
+        )
+
+    def tearDown(self):
+        super(PhotoSizeCacheTest, self).tearDown()
+        self.s.pre_cache = False
+        self.s.save()
