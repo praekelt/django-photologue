@@ -3,6 +3,7 @@ import random
 import shutil
 import zipfile
 import utils
+import hashlib
 
 from datetime import datetime
 from inspect import isclass
@@ -487,6 +488,11 @@ class ImageModel(models.Model):
         except:
             pass
 
+    def __init__(self, *args, **kwargs):
+        super(ImageModel, self).__init__(*args, **kwargs)
+        if self.image:
+            setattr(self, '_original_image_path', self.image.path)
+
     def save(self, *args, **kwargs):
         if self.date_taken is None:
             try:
@@ -502,7 +508,22 @@ class ImageModel(models.Model):
         if self.date_taken is None:
             self.date_taken = datetime.now()
         if self._get_pk_val():
-            self.clear_cache()
+            # Clear cache if image has changed
+            original_image_path = getattr(self, '_original_image_path', None)
+            if original_image_path and self.image:
+                # Compare md5 hashes. Base the blank exception handling on the
+                # EXIF method.
+                try:
+                    hash1 = hashlib.md5(open(original_image_path, 'r').read()).hexdigest()
+                    self.image.seek(0)
+                    hash2 = hashlib.md5(self.image.read()).hexdigest()
+                    self.image.seek(0)
+                    if hash1 != hash2:
+                        self.clear_cache()
+                except AttributeError:
+                    self.clear_cache()
+            else:
+                self.clear_cache()
         super(ImageModel, self).save(*args, **kwargs)
         self.pre_cache()
 

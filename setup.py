@@ -29,9 +29,9 @@ setup(
         ]
     },
     zip_safe = False,
-    test_suite="setuptest.SetupTestSuite",
+    test_suite="setuptest.setuptest.SetupTestSuite",
     tests_require=[
-        'django-setuptest>=0.0.6',
+        'django-setuptest>=0.1.2',
     ],
     classifiers = ['Development Status :: 5 - Production/Stable',
                    'Environment :: Web Environment',
