@@ -124,6 +124,8 @@ for n in dir(ImageFilter):
             filter_names.append(klass.__name__)
 IMAGE_FILTERS_HELP_TEXT = _('Chain multiple filters using the following pattern "FILTER_ONE->FILTER_TWO->FILTER_THREE". Image filters will be applied in order. The following filters are available: %s.' % (', '.join(filter_names)))
 
+size_method_map = {}
+
 
 class Gallery(models.Model):
     date_added = models.DateTimeField(_('date published'), default=datetime.now)
@@ -322,7 +324,7 @@ class ImageModel(models.Model):
             self.create_size(photosize)
         if photosize.increment_count:
             self.increment_count()
-        if not self.image: 
+        if not self.image:
             return
         return '/'.join([self.cache_url(), self._get_filename_for_size(photosize.name)])
 
@@ -345,6 +347,18 @@ class ImageModel(models.Model):
                     curry(self._get_SIZE_url, size=size))
             setattr(self, 'get_%s_filename' % size,
                     curry(self._get_SIZE_filename, size=size))
+
+    def __getattr__(self, name):
+        global size_method_map
+        if not size_method_map:
+            init_size_method_map()
+        di = size_method_map.get(name, None)
+        if di is not None:
+            result = curry(getattr(self, di['base_name']), di['size'])
+            setattr(self, name, result)
+            return result
+        else:
+            raise AttributeError
 
     def size_exists(self, photosize):
         func = getattr(self, "get_%s_filename" % photosize.name, None)
@@ -507,6 +521,7 @@ class ImageModel(models.Model):
         self.pre_cache()
 
     def delete(self):
+        print "ORIGINAL"
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
         self.clear_cache()
         os.remove(self.image.path)
@@ -762,18 +777,15 @@ class PhotoSizeCache(object):
                 self.sizes[size.name] = size
 
     def reset(self):
+        global size_method_map
+        size_method_map = {}
         self.sizes = {}
 
 
-# Set up the accessor methods
-def add_methods(sender, instance, signal, *args, **kwargs):
-    """ Adds methods to access sized images (urls, paths)
-
-    after the Photo model's __init__ function completes,
-    this method calls "add_accessor_methods" on each instance.
-    """
-    if hasattr(instance, 'add_accessor_methods'):
-        instance.add_accessor_methods()
-
-# connect the add_accessor_methods function to the post_init signal
-post_init.connect(add_methods)
+def init_size_method_map():
+    global size_method_map
+    for size in PhotoSizeCache().sizes.keys():
+        size_method_map['get_%s_size' % size] = {'base_name': '_get_SIZE_size', 'size': size}
+        size_method_map['get_%s_photosize' % size] = {'base_name': '_get_SIZE_photosize', 'size': size}
+        size_method_map['get_%s_url' % size] = {'base_name': '_get_SIZE_url', 'size': size}
+        size_method_map['get_%s_filename' % size] = {'base_name': '_get_SIZE_filename', 'size': size}
