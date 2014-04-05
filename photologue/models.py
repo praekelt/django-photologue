@@ -3,6 +3,7 @@ import random
 import shutil
 import zipfile
 import utils
+import unicodedata
 
 from datetime import datetime
 from inspect import isclass
@@ -80,7 +81,8 @@ if PHOTOLOGUE_PATH is not None:
         get_storage_path = getattr(module, parts[-1])
 else:
     def get_storage_path(instance, filename):
-        return os.path.join(PHOTOLOGUE_DIR, 'photos', filename)
+        fn = unicodedata.normalize('NFKD', force_unicode(filename)).encode('ascii', 'ignore')
+        return os.path.join(PHOTOLOGUE_DIR, 'photos', fn)
 
 # Quality options for JPEG images
 JPEG_QUALITY_CHOICES = (
@@ -258,7 +260,7 @@ class GalleryUpload(models.Model):
 
 
 class ImageModel(models.Model):
-    image = models.ImageField(_('image'), max_length=IMAGE_FIELD_MAX_LENGTH, 
+    image = models.ImageField(_('image'), max_length=IMAGE_FIELD_MAX_LENGTH,
                               upload_to=get_storage_path, blank=True)
     date_taken = models.DateTimeField(_('date taken'), null=True, blank=True, editable=False)
     view_count = models.PositiveIntegerField(default=0, editable=False)
@@ -434,7 +436,7 @@ class ImageModel(models.Model):
         # check if we have overrides and use that instead
         override = self.get_override(photosize)
         image_model_obj = override if override else self
-        
+
         try:
             im = Image.open(image_model_obj.image.path)
         except IOError:
