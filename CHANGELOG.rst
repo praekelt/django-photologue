@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+2.9.praekelt
+------------
 #. Normalize filenames to ASCII.
 
 2.8.praekelt
