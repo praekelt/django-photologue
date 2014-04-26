@@ -4,6 +4,7 @@ import shutil
 import zipfile
 import utils
 import unicodedata
+import logging
 
 from datetime import datetime
 from inspect import isclass
@@ -127,6 +128,8 @@ for n in dir(ImageFilter):
 IMAGE_FILTERS_HELP_TEXT = _('Chain multiple filters using the following pattern "FILTER_ONE->FILTER_TWO->FILTER_THREE". Image filters will be applied in order. The following filters are available: %s.' % (', '.join(filter_names)))
 
 size_method_map = {}
+
+logger = logging.getLogger(__name__)
 
 
 class Gallery(models.Model):
@@ -472,9 +475,17 @@ class ImageModel(models.Model):
                     pass
             im.save(im_filename, 'JPEG', quality=int(photosize.quality), optimize=True)
         except IOError, e:
+            # Attempt to clean up.
             if os.path.isfile(im_filename):
-                os.unlink(im_filename)
-            raise e
+                try:
+                    os.unlink(im_filename)
+                except OSError:
+                    pass
+            # Log the error but don't raise it
+            logger.error("Cannot create size %s for %s" \
+                % (photosize.name, image_model_obj.image.path)
+            )
+
 
     def remove_size(self, photosize, remove_dirs=True):
         if not self.size_exists(photosize):
