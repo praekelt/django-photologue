@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.10.praekelt
+-------------
+#. Defensive code in `create_size` so it never raises.
+
 2.9.praekelt
 ------------
 #. Normalize filenames to ASCII.
