@@ -428,7 +428,7 @@ class ImageModel(models.Model):
 
     def create_size(self, photosize):
         # Fail gracefully if we don't have an image.
-        if not self.image: 
+        if not self.image:
             return
 
         if self.size_exists(photosize):
