@@ -444,6 +444,12 @@ class ImageModel(models.Model):
             im = Image.open(image_model_obj.image.path)
         except IOError:
             return
+        except UnicodeEncodeError:
+            msg = "UnicodeEncodeError path=%s" % image_model_obj.image.path
+            logger.error(msg)
+            print msg
+            return
+
         # Correct colorspace
         im = utils.colorspace(im)
         # Save the original format
