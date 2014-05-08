@@ -498,7 +498,10 @@ class ImageModel(models.Model):
             return
         filename = getattr(self, "get_%s_filename" % photosize.name)()
         if os.path.isfile(filename):
-            os.remove(filename)
+            try:
+                os.remove(filename)
+            except OSError:
+                pass
         if remove_dirs:
             self.remove_cache_dirs()
 
