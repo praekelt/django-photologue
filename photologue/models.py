@@ -5,6 +5,7 @@ import zipfile
 import utils
 import unicodedata
 import logging
+import hashlib
 
 from datetime import datetime
 from inspect import isclass
@@ -299,12 +300,20 @@ class ImageModel(models.Model):
 
     def cache_path(self):
         try:
-            return os.path.join(os.path.dirname(self.image.path), "cache")
+            return os.path.join(
+                os.path.dirname(self.image.path),
+                "cache",
+                hashlib.md5(self.image.name).hexdigest()[:2]
+            )
         except ValueError:
             ""
 
     def cache_url(self):
-        return '/'.join([os.path.dirname(self.image.url), "cache"])
+        return '/'.join([
+            os.path.dirname(self.image.url),
+            "cache",
+            hashlib.md5(self.image.name).hexdigest()[:2]
+        ])
 
     def image_filename(self):
         return os.path.basename(force_unicode(self.image.path))

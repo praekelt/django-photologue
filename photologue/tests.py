@@ -2,6 +2,8 @@
 
 import os
 import unittest
+import hashlib
+
 from django.conf import settings
 from django.core.files.base import ContentFile, File
 from django.test import TestCase
@@ -54,9 +56,12 @@ class PhotoTest(PLTest):
                          os.path.normpath(os.path.join(settings.MEDIA_ROOT,
                                       PHOTOLOGUE_DIR,
                                       'photos',
-                                      'cache')).lower())
+                                      'cache',
+                                      hashlib.md5(self.pl.image.name).hexdigest()[:2])).lower())
         self.assertEqual(self.pl.cache_url(),
-                         settings.MEDIA_URL + PHOTOLOGUE_DIR + '/photos/cache')
+                         settings.MEDIA_URL + PHOTOLOGUE_DIR \
+                         + '/photos/cache/' \
+                         + hashlib.md5(self.pl.image.name).hexdigest()[:2])
 
     def test_count(self):
         for i in range(5):
