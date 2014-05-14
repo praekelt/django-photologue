@@ -19,6 +19,7 @@ from django.template.defaultfilters import slugify
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.functional import curry
 from django.utils.translation import ugettext_lazy as _
+from django.core.cache import cache
 
 # Required PIL classes may or may not be available from the root namespace
 # depending on the installation method used.
@@ -433,59 +434,72 @@ class ImageModel(models.Model):
 
         if self.size_exists(photosize):
             return
-        if not os.path.isdir(self.cache_path()):
-            os.makedirs(self.cache_path())
 
-        # check if we have overrides and use that instead
-        override = self.get_override(photosize)
-        image_model_obj = override if override else self
-
-        try:
-            im = Image.open(image_model_obj.image.path)
-        except IOError:
+        # Check lock
+        key = 'pl-lock-%s-%s' % (self.image.name, photosize.name)
+        lock = cache.get(key, None)
+        if lock is not None:
             return
-        # Correct colorspace
-        im = utils.colorspace(im)
-        # Save the original format
-        im_format = im.format
-        # Apply effect if found
-        if image_model_obj.effect is not None:
-            im = image_model_obj.effect.pre_process(im)
-        elif photosize.effect is not None:
-            im = photosize.effect.pre_process(im)
-        # Resize/crop image
-        if im.size != photosize.size and photosize.size != (0, 0):
-            im = image_model_obj.resize_image(im, photosize)
-        # Apply watermark if found
-        if photosize.watermark is not None:
-            im = photosize.watermark.post_process(im)
-        # Apply effect if found
-        if image_model_obj.effect is not None:
-            im = image_model_obj.effect.post_process(im)
-        elif photosize.effect is not None:
-            im = photosize.effect.post_process(im)
-        # Save file
-        im_filename = getattr(self, "get_%s_filename" % photosize.name)()
-        try:
-            if im_format != 'JPEG':
-                try:
-                    im.save(im_filename)
-                    return
-                except KeyError:
-                    pass
-            im.save(im_filename, 'JPEG', quality=int(photosize.quality), optimize=True)
-        except IOError, e:
-            # Attempt to clean up.
-            if os.path.isfile(im_filename):
-                try:
-                    os.unlink(im_filename)
-                except OSError:
-                    pass
-            # Log the error but don't raise it
-            logger.error("Cannot create size %s for %s" \
-                % (photosize.name, image_model_obj.image.path)
-            )
 
+        # Acquire lock
+        cache.set(key, 1, 60)
+
+        try:
+            if not os.path.isdir(self.cache_path()):
+                os.makedirs(self.cache_path())
+
+            # check if we have overrides and use that instead
+            override = self.get_override(photosize)
+            image_model_obj = override if override else self
+
+            try:
+                im = Image.open(image_model_obj.image.path)
+            except IOError:
+                return
+            # Correct colorspace
+            im = utils.colorspace(im)
+            # Save the original format
+            im_format = im.format
+            # Apply effect if found
+            if image_model_obj.effect is not None:
+                im = image_model_obj.effect.pre_process(im)
+            elif photosize.effect is not None:
+                im = photosize.effect.pre_process(im)
+            # Resize/crop image
+            if im.size != photosize.size and photosize.size != (0, 0):
+                im = image_model_obj.resize_image(im, photosize)
+            # Apply watermark if found
+            if photosize.watermark is not None:
+                im = photosize.watermark.post_process(im)
+            # Apply effect if found
+            if image_model_obj.effect is not None:
+                im = image_model_obj.effect.post_process(im)
+            elif photosize.effect is not None:
+                im = photosize.effect.post_process(im)
+            # Save file
+            im_filename = getattr(self, "get_%s_filename" % photosize.name)()
+            try:
+                if im_format != 'JPEG':
+                    try:
+                        im.save(im_filename)
+                        return
+                    except KeyError:
+                        pass
+                im.save(im_filename, 'JPEG', quality=int(photosize.quality), optimize=True)
+            except IOError, e:
+                # Attempt to clean up.
+                if os.path.isfile(im_filename):
+                    try:
+                        os.unlink(im_filename)
+                    except OSError:
+                        pass
+                # Log the error but don't raise it
+                logger.error("Cannot create size %s for %s" \
+                    % (photosize.name, image_model_obj.image.path)
+                )
+        finally:
+            # Release lock
+            cache.set(key, None)
 
     def remove_size(self, photosize, remove_dirs=True):
         if not self.size_exists(photosize):
