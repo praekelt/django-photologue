@@ -436,7 +436,7 @@ class ImageModel(models.Model):
             return
 
         # Check lock
-        key = 'pl-lock-%s-%s' % (self.image.name, photosize.name)
+        key = 'pl-lock-%s-%s' % (self.image.name, os.path.split(photosize.name)[-1])
         lock = cache.get(key, None)
         if lock is not None:
             return
