@@ -5,7 +5,6 @@ import zipfile
 import utils
 import unicodedata
 import logging
-import hashlib
 
 from datetime import datetime
 from inspect import isclass
@@ -437,7 +436,7 @@ class ImageModel(models.Model):
             return
 
         # Check lock
-        key = 'pl-lock-%s' % hashlib.md5(self.image.name + photosize.name).hexdigest()
+        key = 'pl-lock-%s-%s' % (self.pk, photosize.name)
         lock = cache.get(key, None)
         if lock is not None:
             return
