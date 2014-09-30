@@ -13,12 +13,12 @@ else:
     version = "%d.%d" % version_tuple[:2]
 
 setup(
-    name = "django-photologue",
+    name = "django-photologue-praekelt",
     version = version,
-    description = "Powerful image management for the Django web framework.",
+    description = "Powerful image management for the Django web framework. Praekelt fork.",
     author = "Justin Driscoll",
-    author_email = "justin@driscolldev.com",
-    url = "http://code.google.com/p/django-photologue/",
+    author_email = "hedley@praekelt.com",
+    url = "https://github.com/praekelt/django-photologue/",
     packages = find_packages(),
     package_data = {
         'photologue': [
