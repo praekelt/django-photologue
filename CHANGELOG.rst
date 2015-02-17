@@ -1,6 +1,15 @@
 Changelog
 =========
 
+next
+----
+#. Defensive code so delete never raises.
+#. Do not destroy scale cache if image does not change.
+
+2.10.1
+------
+#. Change version naming so modern pip does not break.
+
 2.10.praekelt
 -------------
 #. Defensive code in `create_size` so it never raises.
