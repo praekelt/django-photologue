@@ -1,8 +1,8 @@
 Changelog
 =========
 
-next
-----
+2.10.2
+------
 #. Defensive code so delete never raises.
 #. Do not destroy scale cache if image does not change.
 
