@@ -514,6 +514,10 @@ class ImageModel(models.Model):
         except:
             pass
 
+    def __init__(self, *args, **kwargs):
+        super(ImageModel, self).__init__(*args, **kwargs)
+        self._old_image = self.image
+
     def save(self, *args, **kwargs):
         if self.date_taken is None:
             try:
@@ -528,15 +532,18 @@ class ImageModel(models.Model):
                 pass
         if self.date_taken is None:
             self.date_taken = datetime.now()
-        if self._get_pk_val():
-            self.clear_cache()
+        if self._get_pk_val() and (self._old_image != self.image):
+             self.clear_cache()
         super(ImageModel, self).save(*args, **kwargs)
         self.pre_cache()
 
     def delete(self):
         assert self._get_pk_val() is not None, "%s object can't be deleted because its %s attribute is set to None." % (self._meta.object_name, self._meta.pk.attname)
         self.clear_cache()
-        os.remove(self.image.path)
+        try:
+            os.remove(self.image.path)
+        except:
+            pass
         super(ImageModel, self).delete()
 
 
