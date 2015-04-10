@@ -1,6 +1,10 @@
 Changelog
 =========
 
+next
+----
+#. Slugify filenames so we never run into filesystem specific issues.
+
 2.10.2
 ------
 #. Defensive code so delete never raises.

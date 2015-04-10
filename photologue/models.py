@@ -5,6 +5,7 @@ import zipfile
 import utils
 import unicodedata
 import logging
+import re
 
 from datetime import datetime
 from inspect import isclass
@@ -83,6 +84,8 @@ if PHOTOLOGUE_PATH is not None:
 else:
     def get_storage_path(instance, filename):
         fn = unicodedata.normalize('NFKD', force_unicode(filename)).encode('ascii', 'ignore')
+        fn = unicode(re.sub('[^\w\s\.-]', '', fn).strip().lower())
+        fn = re.sub('[-\s]+', '-', fn)
         return os.path.join(PHOTOLOGUE_DIR, 'photos', fn)
 
 # Quality options for JPEG images
