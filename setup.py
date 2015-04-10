@@ -32,6 +32,7 @@ setup(
     test_suite="setuptest.setuptest.SetupTestSuite",
     tests_require=[
         'django-setuptest>=0.1.4',
+        'Pillow',
     ],
     classifiers = ['Development Status :: 5 - Production/Stable',
                    'Environment :: Web Environment',

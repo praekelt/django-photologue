@@ -15,6 +15,7 @@ PORTRAIT_IMAGE_PATH = os.path.join(RES_DIR, 'test_portrait.jpg')
 SQUARE_IMAGE_PATH = os.path.join(RES_DIR, 'test_square.jpg')
 UNICODE_IMAGE_PATH = os.path.join(RES_DIR, 'test_unicode_®.jpg')
 NONSENSE_IMAGE_PATH = os.path.join(RES_DIR, 'test_nonsense.jpg')
+SPACED_IMAGE_PATH = os.path.join(RES_DIR, 'test spaced file.jpg')
 
 
 class TestPhoto(ImageModel):
@@ -236,6 +237,12 @@ class ImageModelTest(PLTest):
         self.pn.image.save(os.path.basename(NONSENSE_IMAGE_PATH),
                            ContentFile(open(NONSENSE_IMAGE_PATH, 'rb').read()))
 
+        # Spaced image has spaces in the path
+        self.ps = TestPhoto(name='portrait')
+        self.ps.image.save(os.path.basename(SPACED_IMAGE_PATH),
+                           ContentFile(open(SPACED_IMAGE_PATH, 'rb').read()))
+
+
     def tearDown(self):
         super(ImageModelTest, self).tearDown()
         self.pu.delete()
@@ -244,3 +251,8 @@ class ImageModelTest(PLTest):
     def test_create_size(self):
         """Nonsense image must not break scaling"""
         self.pn.create_size(self.s)
+
+    def test_slugified_filename(self):
+        """Filenames are converted to look like slugs"""
+        self.failUnless(self.ps.image_filename().startswith('test-spaced-file'))
+        self.failUnless(self.ps.image_filename().endswith('.jpg'))

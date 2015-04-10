@@ -5,6 +5,7 @@ import zipfile
 import utils
 import unicodedata
 import logging
+import re
 
 from datetime import datetime
 from inspect import isclass
@@ -83,6 +84,8 @@ if PHOTOLOGUE_PATH is not None:
 else:
     def get_storage_path(instance, filename):
         fn = unicodedata.normalize('NFKD', force_unicode(filename)).encode('ascii', 'ignore')
+        fn = unicode(re.sub('[^\w\s\.-]', '', fn).strip().lower())
+        fn = re.sub('[-\s]+', '-', fn)
         return os.path.join(PHOTOLOGUE_DIR, 'photos', fn)
 
 # Quality options for JPEG images
@@ -473,7 +476,7 @@ class ImageModel(models.Model):
                     return
                 except KeyError:
                     pass
-            im.save(im_filename, 'JPEG', quality=int(photosize.quality), optimize=True)
+            im.save(im_filename, 'JPEG', quality=int(photosize.quality), optimize=True, progressive=True)
         except IOError, e:
             # Attempt to clean up.
             if os.path.isfile(im_filename):
@@ -631,7 +634,7 @@ class BaseEffect(models.Model):
         except IOError:
             raise IOError('Photologue was unable to open the sample image: %s.' % SAMPLE_IMAGE_PATH)
         im = self.process(im)
-        im.save(self.sample_filename(), 'JPEG', quality=90, optimize=True)
+        im.save(self.sample_filename(), 'JPEG', quality=90, optimize=True, progressive=True)
 
     def admin_sample(self):
         return u'<img src="%s">' % self.sample_url()
